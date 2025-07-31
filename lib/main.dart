@@ -10,9 +10,14 @@ import 'package:social_gatherings/screens/main_screen.dart';
 import 'package:social_gatherings/screens/auth/login_screen.dart';
 import 'package:social_gatherings/screens/profile_screen.dart';
 import 'package:social_gatherings/utils/theme.dart';
+import 'package:social_gatherings/services/database_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize demo data
+  await DatabaseService.initializeDemoData();
+  
   runApp(const SocialGatheringsApp());
 }
 

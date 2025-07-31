@@ -1,30 +1,49 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:social_gatherings/models/user.dart';
 import 'package:social_gatherings/models/event.dart';
-
 import 'package:social_gatherings/models/poll.dart';
 import 'package:social_gatherings/models/announcement.dart';
 
 class DatabaseService {
   static Database? _database;
+  static SharedPreferences? _prefs;
   static const String _databaseName = 'social_gatherings.db';
   static const int _databaseVersion = 1;
 
-  static Future<Database> get database async {
+  // Check if running on web
+  static bool get _isWeb => kIsWeb;
+
+  static Future<Database?> get database async {
+    if (_isWeb) return null; // Web doesn't use SQLite
     if (_database != null) return _database!;
     _database = await _initDatabase();
     return _database!;
   }
 
-  static Future<Database> _initDatabase() async {
-    String path = join(await getDatabasesPath(), _databaseName);
-    return await openDatabase(
-      path,
-      version: _databaseVersion,
-      onCreate: _onCreate,
-    );
+  static Future<SharedPreferences> get prefs async {
+    if (_prefs != null) return _prefs!;
+    _prefs = await SharedPreferences.getInstance();
+    return _prefs!;
+  }
+
+  static Future<Database?> _initDatabase() async {
+    if (_isWeb) return null;
+    try {
+      String path = join(await getDatabasesPath(), _databaseName);
+      return await openDatabase(
+        path,
+        version: _databaseVersion,
+        onCreate: _onCreate,
+      );
+    } catch (e) {
+      print('Database initialization error: $e');
+      return null;
+    }
   }
 
   static Future<void> _onCreate(Database db, int version) async {
@@ -113,39 +132,516 @@ class DatabaseService {
         content TEXT NOT NULL,
         authorId TEXT NOT NULL,
         authorName TEXT NOT NULL,
-        createdAt TEXT NOT NULL,
         isImportant INTEGER NOT NULL,
-        tags TEXT NOT NULL
+        tags TEXT NOT NULL,
+        createdAt TEXT NOT NULL
       )
     ''');
+  }
 
-    // Insert demo data
-    await _insertDemoData(db);
+  // User operations
+  static Future<void> createUser(User user) async {
+    if (_isWeb) {
+      final prefs = await DatabaseService.prefs;
+      final users = _getUsersFromPrefs(prefs);
+      users[user.id] = user.toJson();
+      await prefs.setString('users', jsonEncode(users));
+    } else {
+      final db = await database;
+      if (db != null) {
+        await db.insert('users', user.toJson());
+      }
+    }
+  }
+
+  static Future<User?> getUserByEmail(String email) async {
+    if (_isWeb) {
+      final prefs = await DatabaseService.prefs;
+      final users = _getUsersFromPrefs(prefs);
+      for (var userData in users.values) {
+        final user = User.fromJson(userData);
+        if (user.email == email) return user;
+      }
+      return null;
+    } else {
+      final db = await database;
+      if (db != null) {
+        final List<Map<String, dynamic>> maps = await db.query(
+          'users',
+          where: 'email = ?',
+          whereArgs: [email],
+        );
+        if (maps.isNotEmpty) {
+          return User.fromJson(maps.first);
+        }
+      }
+      return null;
+    }
+  }
+
+  static Future<User?> getUserById(String id) async {
+    if (_isWeb) {
+      final prefs = await DatabaseService.prefs;
+      final users = _getUsersFromPrefs(prefs);
+      final userData = users[id];
+      return userData != null ? User.fromJson(userData) : null;
+    } else {
+      final db = await database;
+      if (db != null) {
+        final List<Map<String, dynamic>> maps = await db.query(
+          'users',
+          where: 'id = ?',
+          whereArgs: [id],
+        );
+        if (maps.isNotEmpty) {
+          return User.fromJson(maps.first);
+        }
+      }
+      return null;
+    }
+  }
+
+  // Event operations
+  static Future<void> createEvent(Event event) async {
+    if (_isWeb) {
+      final prefs = await DatabaseService.prefs;
+      final events = _getEventsFromPrefs(prefs);
+      events[event.id] = event.toJson();
+      await prefs.setString('events', jsonEncode(events));
+    } else {
+      final db = await database;
+      if (db != null) {
+        await db.insert('events', event.toJson());
+      }
+    }
+  }
+
+  static Future<List<Event>> getEvents() async {
+    if (_isWeb) {
+      final prefs = await DatabaseService.prefs;
+      final events = _getEventsFromPrefs(prefs);
+      return events.values.map((e) => Event.fromJson(e)).toList();
+    } else {
+      final db = await database;
+      if (db != null) {
+        final List<Map<String, dynamic>> maps = await db.query('events');
+        return List.generate(maps.length, (i) => Event.fromJson(maps[i]));
+      }
+      return [];
+    }
+  }
+
+  static Future<void> updateEvent(Event event) async {
+    if (_isWeb) {
+      final prefs = await DatabaseService.prefs;
+      final events = _getEventsFromPrefs(prefs);
+      events[event.id] = event.toJson();
+      await prefs.setString('events', jsonEncode(events));
+    } else {
+      final db = await database;
+      if (db != null) {
+        await db.update(
+          'events',
+          event.toJson(),
+          where: 'id = ?',
+          whereArgs: [event.id],
+        );
+      }
+    }
+  }
+
+  static Future<void> deleteEvent(String id) async {
+    if (_isWeb) {
+      final prefs = await DatabaseService.prefs;
+      final events = _getEventsFromPrefs(prefs);
+      events.remove(id);
+      await prefs.setString('events', jsonEncode(events));
+    } else {
+      final db = await database;
+      if (db != null) {
+        await db.delete(
+          'events',
+          where: 'id = ?',
+          whereArgs: [id],
+        );
+      }
+    }
+  }
+
+  // Poll operations
+  static Future<void> createPoll(Poll poll) async {
+    if (_isWeb) {
+      final prefs = await DatabaseService.prefs;
+      final polls = _getPollsFromPrefs(prefs);
+      polls[poll.id] = poll.toJson();
+      await prefs.setString('polls', jsonEncode(polls));
+    } else {
+      final db = await database;
+      if (db != null) {
+        await db.insert('polls', poll.toJson());
+        for (var option in poll.options) {
+          await db.insert('poll_options', option.toJson());
+        }
+      }
+    }
+  }
+
+  static Future<List<Poll>> getPolls() async {
+    if (_isWeb) {
+      final prefs = await DatabaseService.prefs;
+      final polls = _getPollsFromPrefs(prefs);
+      return polls.values.map((p) => Poll.fromJson(p)).toList();
+    } else {
+      final db = await database;
+      if (db != null) {
+        final List<Map<String, dynamic>> pollMaps = await db.query('polls');
+        List<Poll> polls = [];
+        for (var pollMap in pollMaps) {
+          final List<Map<String, dynamic>> optionMaps = await db.query(
+            'poll_options',
+            where: 'pollId = ?',
+            whereArgs: [pollMap['id']],
+          );
+          final options = List.generate(
+            optionMaps.length,
+            (i) => PollOption.fromJson(optionMaps[i]),
+          );
+          // Create a new Poll instance with the options
+          final poll = Poll(
+            id: pollMap['id'],
+            question: pollMap['question'],
+            options: options,
+            createdBy: pollMap['createdBy'],
+            createdAt: DateTime.parse(pollMap['createdAt']),
+            expiresAt: pollMap['expiresAt'] != null 
+                ? DateTime.parse(pollMap['expiresAt']) 
+                : null,
+            isActive: pollMap['isActive'] == 1,
+            votedBy: List<String>.from(jsonDecode(pollMap['votedBy'])),
+          );
+          polls.add(poll);
+        }
+        return polls;
+      }
+      return [];
+    }
+  }
+
+  static Future<void> updatePoll(Poll poll) async {
+    if (_isWeb) {
+      final prefs = await DatabaseService.prefs;
+      final polls = _getPollsFromPrefs(prefs);
+      polls[poll.id] = poll.toJson();
+      await prefs.setString('polls', jsonEncode(polls));
+    } else {
+      final db = await database;
+      if (db != null) {
+        await db.update(
+          'polls',
+          poll.toJson(),
+          where: 'id = ?',
+          whereArgs: [poll.id],
+        );
+        // Update options
+        await db.delete(
+          'poll_options',
+          where: 'pollId = ?',
+          whereArgs: [poll.id],
+        );
+        for (var option in poll.options) {
+          await db.insert('poll_options', option.toJson());
+        }
+      }
+    }
+  }
+
+  static Future<void> deletePoll(String id) async {
+    if (_isWeb) {
+      final prefs = await DatabaseService.prefs;
+      final polls = _getPollsFromPrefs(prefs);
+      polls.remove(id);
+      await prefs.setString('polls', jsonEncode(polls));
+    } else {
+      final db = await database;
+      if (db != null) {
+        await db.delete(
+          'polls',
+          where: 'id = ?',
+          whereArgs: [id],
+        );
+        await db.delete(
+          'poll_options',
+          where: 'pollId = ?',
+          whereArgs: [id],
+        );
+      }
+    }
+  }
+
+  static Future<void> voteInPoll(String pollId, String optionId, String userId) async {
+    if (_isWeb) {
+      final prefs = await DatabaseService.prefs;
+      final polls = _getPollsFromPrefs(prefs);
+      final pollData = polls[pollId];
+      if (pollData != null) {
+        final poll = Poll.fromJson(pollData);
+        final votedBy = List<String>.from(poll.votedBy);
+        if (!votedBy.contains(userId)) {
+          votedBy.add(userId);
+          // Update the poll with new votedBy list
+          final updatedPoll = Poll(
+            id: poll.id,
+            question: poll.question,
+            options: poll.options.map((option) {
+              if (option.id == optionId) {
+                return PollOption(
+                  id: option.id,
+                  text: option.text,
+                  votes: option.votes + 1,
+                );
+              }
+              return option;
+            }).toList(),
+            createdBy: poll.createdBy,
+            createdAt: poll.createdAt,
+            expiresAt: poll.expiresAt,
+            isActive: poll.isActive,
+            votedBy: votedBy,
+          );
+          polls[pollId] = updatedPoll.toJson();
+          await prefs.setString('polls', jsonEncode(polls));
+        }
+      }
+    } else {
+      final db = await database;
+      if (db != null) {
+        // Update poll option votes
+        await db.rawUpdate('''
+          UPDATE poll_options 
+          SET votes = votes + 1 
+          WHERE id = ?
+        ''', [optionId]);
+        
+        // Add user to votedBy list
+        final poll = await db.query('polls', where: 'id = ?', whereArgs: [pollId]);
+        if (poll.isNotEmpty) {
+          final votedBy = List<String>.from(jsonDecode(poll.first['votedBy'] as String));
+          if (!votedBy.contains(userId)) {
+            votedBy.add(userId);
+            await db.update('polls', 
+              {'votedBy': jsonEncode(votedBy)}, 
+              where: 'id = ?',
+              whereArgs: [pollId]
+            );
+          }
+        }
+      }
+    }
+  }
+
+  // Announcement operations
+  static Future<void> createAnnouncement(Announcement announcement) async {
+    if (_isWeb) {
+      final prefs = await DatabaseService.prefs;
+      final announcements = _getAnnouncementsFromPrefs(prefs);
+      announcements[announcement.id] = announcement.toJson();
+      await prefs.setString('announcements', jsonEncode(announcements));
+    } else {
+      final db = await database;
+      if (db != null) {
+        await db.insert('announcements', announcement.toJson());
+      }
+    }
+  }
+
+  static Future<List<Announcement>> getAnnouncements() async {
+    if (_isWeb) {
+      final prefs = await DatabaseService.prefs;
+      final announcements = _getAnnouncementsFromPrefs(prefs);
+      return announcements.values.map((a) => Announcement.fromJson(a)).toList();
+    } else {
+      final db = await database;
+      if (db != null) {
+        final List<Map<String, dynamic>> maps = await db.query('announcements');
+        return List.generate(maps.length, (i) => Announcement.fromJson(maps[i]));
+      }
+      return [];
+    }
+  }
+
+  static Future<void> updateAnnouncement(Announcement announcement) async {
+    if (_isWeb) {
+      final prefs = await DatabaseService.prefs;
+      final announcements = _getAnnouncementsFromPrefs(prefs);
+      announcements[announcement.id] = announcement.toJson();
+      await prefs.setString('announcements', jsonEncode(announcements));
+    } else {
+      final db = await database;
+      if (db != null) {
+        await db.update(
+          'announcements',
+          announcement.toJson(),
+          where: 'id = ?',
+          whereArgs: [announcement.id],
+        );
+      }
+    }
+  }
+
+  static Future<void> deleteAnnouncement(String id) async {
+    if (_isWeb) {
+      final prefs = await DatabaseService.prefs;
+      final announcements = _getAnnouncementsFromPrefs(prefs);
+      announcements.remove(id);
+      await prefs.setString('announcements', jsonEncode(announcements));
+    } else {
+      final db = await database;
+      if (db != null) {
+        await db.delete(
+          'announcements',
+          where: 'id = ?',
+          whereArgs: [id],
+        );
+      }
+    }
+  }
+
+  // Helper methods for SharedPreferences
+  static Map<String, dynamic> _getUsersFromPrefs(SharedPreferences prefs) {
+    final usersString = prefs.getString('users') ?? '{}';
+    return Map<String, dynamic>.from(jsonDecode(usersString));
+  }
+
+  static Map<String, dynamic> _getEventsFromPrefs(SharedPreferences prefs) {
+    final eventsString = prefs.getString('events') ?? '{}';
+    return Map<String, dynamic>.from(jsonDecode(eventsString));
+  }
+
+  static Map<String, dynamic> _getPollsFromPrefs(SharedPreferences prefs) {
+    final pollsString = prefs.getString('polls') ?? '{}';
+    return Map<String, dynamic>.from(jsonDecode(pollsString));
+  }
+
+  static Map<String, dynamic> _getAnnouncementsFromPrefs(SharedPreferences prefs) {
+    final announcementsString = prefs.getString('announcements') ?? '{}';
+    return Map<String, dynamic>.from(jsonDecode(announcementsString));
+  }
+
+  // Initialize demo data
+  static Future<void> initializeDemoData() async {
+    if (_isWeb) {
+      final prefs = await DatabaseService.prefs;
+      
+      // Check if demo data already exists
+      final hasDemoData = prefs.getBool('demo_data_initialized') ?? false;
+      if (hasDemoData) return;
+      
+      // Create demo events
+      final demoEvents = {
+        'event1': {
+          'id': 'event1',
+          'title': 'Summer BBQ Party',
+          'description': 'Join us for a fun summer BBQ with friends and family!',
+          'dateTime': DateTime.now().add(const Duration(days: 7)).toIso8601String(),
+          'location': 'Central Park',
+          'organizerId': 'user1',
+          'organizerName': 'John Doe',
+          'status': 'upcoming',
+          'maxAttendees': 50,
+          'attendeeIds': jsonEncode(['user1', 'user2']),
+          'tags': jsonEncode(['BBQ', 'Summer', 'Outdoor']),
+          'imageUrl': null,
+          'createdAt': DateTime.now().toIso8601String(),
+        },
+        'event2': {
+          'id': 'event2',
+          'title': 'Game Night',
+          'description': 'Board games and card games night!',
+          'dateTime': DateTime.now().add(const Duration(days: 14)).toIso8601String(),
+          'location': 'Community Center',
+          'organizerId': 'user2',
+          'organizerName': 'Jane Smith',
+          'status': 'upcoming',
+          'maxAttendees': 20,
+          'attendeeIds': jsonEncode(['user1']),
+          'tags': jsonEncode(['Games', 'Indoor', 'Fun']),
+          'imageUrl': null,
+          'createdAt': DateTime.now().toIso8601String(),
+        },
+      };
+      
+      // Create demo polls
+      final demoPolls = {
+        'poll1': {
+          'id': 'poll1',
+          'question': 'What food should we serve at the BBQ?',
+          'options': [
+            {
+              'id': 'option1',
+              'text': 'Burgers and Hot Dogs',
+              'votes': 5,
+            },
+            {
+              'id': 'option2',
+              'text': 'Pizza',
+              'votes': 3,
+            },
+            {
+              'id': 'option3',
+              'text': 'Tacos',
+              'votes': 2,
+            },
+          ],
+          'createdBy': 'user1',
+          'createdAt': DateTime.now().toIso8601String(),
+          'expiresAt': DateTime.now().add(const Duration(days: 3)).toIso8601String(),
+          'isActive': 1,
+          'votedBy': jsonEncode(['user1']),
+        },
+      };
+      
+      // Create demo announcements
+      final demoAnnouncements = {
+        'announcement1': {
+          'id': 'announcement1',
+          'title': 'Welcome to Social Gatherings!',
+          'content': 'We\'re excited to have you join our community. Start creating and joining events!',
+          'authorId': 'user1',
+          'authorName': 'John Doe',
+          'isImportant': 1,
+          'tags': jsonEncode(['Welcome', 'Community']),
+          'createdAt': DateTime.now().toIso8601String(),
+        },
+        'announcement2': {
+          'id': 'announcement2',
+          'title': 'New Feature: Photo Albums',
+          'content': 'You can now create photo albums for your events and share memories!',
+          'authorId': 'user2',
+          'authorName': 'Jane Smith',
+          'isImportant': 0,
+          'tags': jsonEncode(['Feature', 'Photos']),
+          'createdAt': DateTime.now().subtract(const Duration(days: 1)).toIso8601String(),
+        },
+      };
+      
+      // Save demo data
+      await prefs.setString('events', jsonEncode(demoEvents));
+      await prefs.setString('polls', jsonEncode(demoPolls));
+      await prefs.setString('announcements', jsonEncode(demoAnnouncements));
+      await prefs.setBool('demo_data_initialized', true);
+    } else {
+      // For mobile, check if demo data exists
+      final db = await database;
+      if (db != null) {
+        final events = await db.query('events');
+        if (events.isEmpty) {
+          await _insertDemoData(db);
+        }
+      }
+    }
   }
 
   static Future<void> _insertDemoData(Database db) async {
-    // Demo users
-    final demoUsers = [
-      {
-        'id': 'user1',
-        'name': 'John Doe',
-        'email': 'john@example.com',
-        'profileImage': null,
-        'createdAt': DateTime.now().toIso8601String(),
-      },
-      {
-        'id': 'user2',
-        'name': 'Jane Smith',
-        'email': 'jane@example.com',
-        'profileImage': null,
-        'createdAt': DateTime.now().toIso8601String(),
-      },
-    ];
-
-    for (final user in demoUsers) {
-      await db.insert('users', user);
-    }
-
     // Demo events
     final demoEvents = [
       {
@@ -156,7 +652,7 @@ class DatabaseService {
         'location': 'Central Park',
         'organizerId': 'user1',
         'organizerName': 'John Doe',
-        'status': 'EventStatus.upcoming',
+        'status': 'upcoming',
         'maxAttendees': 50,
         'attendeeIds': jsonEncode(['user1', 'user2']),
         'tags': jsonEncode(['BBQ', 'Summer', 'Outdoor']),
@@ -171,7 +667,7 @@ class DatabaseService {
         'location': 'Community Center',
         'organizerId': 'user2',
         'organizerName': 'Jane Smith',
-        'status': 'EventStatus.upcoming',
+        'status': 'upcoming',
         'maxAttendees': 20,
         'attendeeIds': jsonEncode(['user1']),
         'tags': jsonEncode(['Games', 'Indoor', 'Fun']),
@@ -235,9 +731,9 @@ class DatabaseService {
         'content': 'We\'re excited to have you join our community. Start creating and joining events!',
         'authorId': 'user1',
         'authorName': 'John Doe',
-        'createdAt': DateTime.now().toIso8601String(),
         'isImportant': 1,
         'tags': jsonEncode(['Welcome', 'Community']),
+        'createdAt': DateTime.now().toIso8601String(),
       },
       {
         'id': 'announcement2',
@@ -245,153 +741,14 @@ class DatabaseService {
         'content': 'You can now create photo albums for your events and share memories!',
         'authorId': 'user2',
         'authorName': 'Jane Smith',
-        'createdAt': DateTime.now().subtract(const Duration(days: 1)).toIso8601String(),
         'isImportant': 0,
         'tags': jsonEncode(['Feature', 'Photos']),
+        'createdAt': DateTime.now().subtract(const Duration(days: 1)).toIso8601String(),
       },
     ];
 
     for (final announcement in demoAnnouncements) {
       await db.insert('announcements', announcement);
     }
-  }
-
-  // User operations
-  static Future<User?> getUser(String id) async {
-    final db = await database;
-    final maps = await db.query('users', where: 'id = ?', whereArgs: [id]);
-    if (maps.isNotEmpty) {
-      return User.fromJson(maps.first);
-    }
-    return null;
-  }
-
-  static Future<User?> getUserByEmail(String email) async {
-    final db = await database;
-    final maps = await db.query('users', where: 'email = ?', whereArgs: [email]);
-    if (maps.isNotEmpty) {
-      return User.fromJson(maps.first);
-    }
-    return null;
-  }
-
-  static Future<void> createUser(User user) async {
-    final db = await database;
-    await db.insert('users', user.toJson());
-  }
-
-  // Event operations
-  static Future<List<Event>> getEvents() async {
-    final db = await database;
-    final maps = await db.query('events', orderBy: 'dateTime ASC');
-    return maps.map((map) => Event.fromJson(map)).toList();
-  }
-
-  static Future<Event?> getEvent(String id) async {
-    final db = await database;
-    final maps = await db.query('events', where: 'id = ?', whereArgs: [id]);
-    if (maps.isNotEmpty) {
-      return Event.fromJson(maps.first);
-    }
-    return null;
-  }
-
-  static Future<void> createEvent(Event event) async {
-    final db = await database;
-    await db.insert('events', event.toJson());
-  }
-
-  static Future<void> updateEvent(Event event) async {
-    final db = await database;
-    await db.update('events', event.toJson(), where: 'id = ?', whereArgs: [event.id]);
-  }
-
-  // Poll operations
-  static Future<List<Poll>> getPolls() async {
-    final db = await database;
-    final maps = await db.query('polls', orderBy: 'createdAt DESC');
-    final polls = <Poll>[];
-    
-    for (final map in maps) {
-      final options = await db.query('poll_options', where: 'pollId = ?', whereArgs: [map['id']]);
-      final pollOptions = options.map((option) => PollOption.fromJson(option)).toList();
-      
-      // Create poll with options
-      final poll = Poll(
-        id: map['id'] as String,
-        question: map['question'] as String,
-        options: pollOptions,
-        createdBy: map['createdBy'] as String,
-        createdAt: DateTime.parse(map['createdAt'] as String),
-        expiresAt: map['expiresAt'] != null ? DateTime.parse(map['expiresAt'] as String) : null,
-        isActive: (map['isActive'] as int) == 1,
-        votedBy: List<String>.from(jsonDecode(map['votedBy'] as String)),
-      );
-      polls.add(poll);
-    }
-    
-    return polls;
-  }
-
-  static Future<void> createPoll(Poll poll) async {
-    final db = await database;
-    await db.insert('polls', poll.toJson());
-    
-    for (final option in poll.options) {
-      await db.insert('poll_options', {
-        ...option.toJson(),
-        'pollId': poll.id,
-      });
-    }
-  }
-
-  static Future<void> deletePoll(String id) async {
-    final db = await database;
-    // Delete poll options first (foreign key constraint)
-    await db.delete('poll_options', where: 'pollId = ?', whereArgs: [id]);
-    // Then delete the poll
-    await db.delete('polls', where: 'id = ?', whereArgs: [id]);
-  }
-
-  static Future<void> voteInPoll(String pollId, String optionId, String userId) async {
-    final db = await database;
-    
-    // Update poll option votes
-    await db.rawUpdate('''
-      UPDATE poll_options 
-      SET votes = votes + 1 
-      WHERE id = ?
-    ''', [optionId]);
-    
-    // Add user to votedBy list
-    final poll = await db.query('polls', where: 'id = ?', whereArgs: [pollId]);
-    if (poll.isNotEmpty) {
-      final votedBy = List<String>.from(jsonDecode(poll.first['votedBy'] as String));
-      if (!votedBy.contains(userId)) {
-        votedBy.add(userId);
-        await db.update('polls', 
-          {'votedBy': jsonEncode(votedBy)}, 
-          where: 'id = ?', 
-          whereArgs: [pollId]
-        );
-      }
-    }
-  }
-
-  // Announcement operations
-  static Future<List<Announcement>> getAnnouncements() async {
-    final db = await database;
-    final maps = await db.query('announcements', orderBy: 'createdAt DESC');
-    return maps.map((map) => Announcement.fromJson(map)).toList();
-  }
-
-  static Future<void> createAnnouncement(Announcement announcement) async {
-    final db = await database;
-    await db.insert('announcements', announcement.toJson());
-  }
-
-  static Future<void> deleteAnnouncement(String id) async {
-    final db = await database;
-    await db.delete('announcements', where: 'id = ?', whereArgs: [id]);
   }
 } 

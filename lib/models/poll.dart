@@ -29,6 +29,7 @@ class Poll {
     return {
       'id': id,
       'question': question,
+      'options': options.map((option) => option.toJson()).toList(),
       'createdBy': createdBy,
       'createdAt': createdAt.toIso8601String(),
       'expiresAt': expiresAt?.toIso8601String(),

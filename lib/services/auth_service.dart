@@ -18,11 +18,21 @@ class AuthService {
     // Check demo credentials
     if (_demoCredentials.containsKey(email) && _demoCredentials[email] == password) {
       // Get user from database
-      final user = await DatabaseService.getUserByEmail(email);
-      if (user != null) {
-        await _saveUserSession(user);
-        return true;
+      var user = await DatabaseService.getUserByEmail(email);
+      
+      // If user doesn't exist, create demo user
+      if (user == null) {
+        user = User(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          name: _getDemoUserName(email),
+          email: email,
+          createdAt: DateTime.now(),
+        );
+        await DatabaseService.createUser(user);
       }
+      
+      await _saveUserSession(user);
+      return true;
     }
     return false;
   }
@@ -75,5 +85,18 @@ class AuthService {
 
   static Future<void> updateUserProfile(User user) async {
     await _saveUserSession(user);
+  }
+
+  static String _getDemoUserName(String email) {
+    switch (email) {
+      case 'john@example.com':
+        return 'John Doe';
+      case 'jane@example.com':
+        return 'Jane Smith';
+      case 'demo@example.com':
+        return 'Demo User';
+      default:
+        return 'User';
+    }
   }
 } 

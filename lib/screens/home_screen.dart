@@ -17,141 +17,317 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Social Gatherings'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () {
-              // TODO: Implement search
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {
-              // TODO: Implement notifications
-            },
-          ),
-        ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          // Refresh data
-          await Provider.of<EventProvider>(context, listen: false).loadEvents();
-        },
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildWelcomeSection(context),
-              const SizedBox(height: 24),
-              _buildQuickActions(context),
-              const SizedBox(height: 24),
-              _buildUpcomingEvents(context),
-              const SizedBox(height: 24),
-              _buildLatestAnnouncements(context),
-            ],
+      backgroundColor: Theme.of(context).colorScheme.background,
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: () async {
+            await Provider.of<EventProvider>(context, listen: false).loadEvents();
+          },
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(context),
+                const SizedBox(height: 24),
+                _buildRelationshipCircle(context),
+                const SizedBox(height: 24),
+                _buildQuickActions(context),
+                const SizedBox(height: 24),
+                _buildUpcomingEvents(context),
+                const SizedBox(height: 24),
+                _buildLatestAnnouncements(context),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildWelcomeSection(BuildContext context) {
+  Widget _buildHeader(BuildContext context) {
     return Consumer<AuthProvider>(
       builder: (context, authProvider, child) {
         final user = authProvider.currentUser;
         final now = DateTime.now();
         final greeting = _getGreeting(now.hour);
         
-        return Card(
-          elevation: 4,
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Theme.of(context).colorScheme.primaryContainer,
-                  Theme.of(context).colorScheme.primaryContainer.withOpacity(0.7),
+        return Row(
+          children: [
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(25),
+              ),
+              child: Center(
+                child: Text(
+                  user?.name.substring(0, 1).toUpperCase() ?? 'U',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '$greeting,',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontSize: 14,
+                    ),
+                  ),
+                  Text(
+                    user?.name ?? 'User',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ],
               ),
             ),
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Icon(
-                        Icons.person_outline,
-                        color: Theme.of(context).colorScheme.primary,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '$greeting,',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.onPrimaryContainer.withOpacity(0.8),
-                              fontSize: 14,
-                            ),
-                          ),
-                          Text(
-                            user?.name ?? 'User',
-                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onPrimaryContainer,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.errorContainer.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: IconButton(
+                icon: Icon(
+                  Icons.logout,
+                  color: Theme.of(context).colorScheme.error,
+                  size: 20,
                 ),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
-                    borderRadius: BorderRadius.circular(12),
+                onPressed: () async {
+                  final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                  await authProvider.logout();
+                  if (context.mounted) {
+                    Navigator.of(context).pushReplacementNamed('/login');
+                  }
+                },
+                tooltip: 'Logout',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildRelationshipCircle(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(context).colorScheme.shadow.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Relationship Circle Visualization
+          Container(
+            height: 120,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Background circles
+                Positioned(
+                  top: 10,
+                  left: 20,
+                  child: Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(30),
+                    ),
                   ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.calendar_today,
-                        color: Theme.of(context).colorScheme.primary,
-                        size: 20,
+                ),
+                Positioned(
+                  top: 20,
+                  right: 30,
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.secondaryContainer.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: 15,
+                  left: 40,
+                  child: Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.tertiaryContainer.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                  ),
+                ),
+                // Profile circles
+                Positioned(
+                  top: 10,
+                  left: 20,
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.surface,
+                        width: 2,
                       ),
-                      const SizedBox(width: 12),
-                      Text(
-                        DateFormat('EEEE, MMMM d, y').format(now),
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface,
-                          fontWeight: FontWeight.w500,
-                        ),
+                    ),
+                    child: Icon(
+                      Icons.person,
+                      color: Theme.of(context).colorScheme.onPrimary,
+                      size: 20,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 20,
+                  right: 30,
+                  child: Container(
+                    width: 35,
+                    height: 35,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.secondary,
+                      borderRadius: BorderRadius.circular(17.5),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.surface,
+                        width: 2,
                       ),
-                    ],
+                    ),
+                    child: Icon(
+                      Icons.person,
+                      color: Theme.of(context).colorScheme.onSecondary,
+                      size: 18,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: 15,
+                  left: 40,
+                  child: Container(
+                    width: 35,
+                    height: 35,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.tertiary,
+                      borderRadius: BorderRadius.circular(17.5),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.surface,
+                        width: 2,
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.person,
+                      color: Theme.of(context).colorScheme.onTertiary,
+                      size: 18,
+                    ),
+                  ),
+                ),
+                // Center profile
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary,
+                    borderRadius: BorderRadius.circular(25),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.surface,
+                      width: 3,
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.person,
+                    color: Theme.of(context).colorScheme.onPrimary,
+                    size: 24,
                   ),
                 ),
               ],
             ),
           ),
-        );
-      },
+          const SizedBox(height: 20),
+          Text(
+            'Ready to take your relationship circle to the next level?',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Use our app and explore millions of people from all over the world with all kinds of traits.',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              const Spacer(),
+              Text(
+                'Next >',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -171,9 +347,9 @@ class HomeScreen extends StatelessWidget {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           crossAxisCount: 2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: 1.2,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: 1.1,
           children: [
             _buildActionCard(
               context,
@@ -219,7 +395,7 @@ class HomeScreen extends StatelessWidget {
               icon: Icons.announcement,
               title: 'Post News',
               subtitle: 'Share updates',
-              color: Theme.of(context).colorScheme.error,
+              color: Theme.of(context).colorScheme.tertiary,
               onTap: () {
                 Navigator.push(
                   context,
@@ -242,14 +418,14 @@ class HomeScreen extends StatelessWidget {
     required VoidCallback onTap,
   }) {
     return Card(
-      elevation: 4,
+      elevation: 1,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(16),
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -263,33 +439,39 @@ class HomeScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   icon,
                   color: color,
-                  size: 32,
+                  size: 20,
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
               Text(
                 title,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: Theme.of(context).colorScheme.onSurface,
+                  fontSize: 12,
                 ),
                 textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 2),
               Text(
                 subtitle,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontSize: 10,
                 ),
                 textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -313,7 +495,7 @@ class HomeScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Upcoming Events',
+                  'Latest Events',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: Theme.of(context).colorScheme.onSurface,
@@ -328,23 +510,31 @@ class HomeScreen extends StatelessWidget {
                       ),
                     );
                   },
-                  child: const Text('View All'),
+                  child: const Text('See All'),
                 ),
               ],
             ),
             const SizedBox(height: 16),
             if (upcomingEvents.isEmpty)
               Card(
-                elevation: 2,
+                elevation: 1,
                 child: Padding(
-                  padding: const EdgeInsets.all(32.0),
+                  padding: const EdgeInsets.all(24.0),
                   child: Center(
                     child: Column(
                       children: [
-                        Icon(
-                          Icons.event_busy,
-                          size: 48,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          child: Icon(
+                            Icons.event_busy,
+                            size: 30,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
                         ),
                         const SizedBox(height: 16),
                         Text(
@@ -377,15 +567,16 @@ class HomeScreen extends StatelessWidget {
 
   Widget _buildEventCard(BuildContext context, event) {
     return Card(
-      elevation: 2,
-      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 1,
+      margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         contentPadding: const EdgeInsets.all(16),
         leading: Container(
-          padding: const EdgeInsets.all(12),
+          width: 50,
+          height: 50,
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.primaryContainer,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(25),
           ),
           child: Icon(
             Icons.event,
@@ -408,7 +599,7 @@ class HomeScreen extends StatelessWidget {
               children: [
                 Icon(
                   Icons.location_on,
-                  size: 16,
+                  size: 14,
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
                 const SizedBox(width: 4),
@@ -427,7 +618,7 @@ class HomeScreen extends StatelessWidget {
               children: [
                 Icon(
                   Icons.access_time,
-                  size: 16,
+                  size: 14,
                   color: Theme.of(context).colorScheme.primary,
                 ),
                 const SizedBox(width: 4),
@@ -443,7 +634,7 @@ class HomeScreen extends StatelessWidget {
           ],
         ),
         trailing: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.secondaryContainer,
             borderRadius: BorderRadius.circular(12),
@@ -490,23 +681,31 @@ class HomeScreen extends StatelessWidget {
                       ),
                     );
                   },
-                  child: const Text('View All'),
+                  child: const Text('See All'),
                 ),
               ],
             ),
             const SizedBox(height: 16),
             if (announcements.isEmpty)
               Card(
-                elevation: 2,
+                elevation: 1,
                 child: Padding(
-                  padding: const EdgeInsets.all(32.0),
+                  padding: const EdgeInsets.all(24.0),
                   child: Center(
                     child: Column(
                       children: [
-                        Icon(
-                          Icons.announcement_outlined,
-                          size: 48,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          child: Icon(
+                            Icons.announcement_outlined,
+                            size: 30,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
                         ),
                         const SizedBox(height: 16),
                         Text(
