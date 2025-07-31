@@ -158,6 +158,44 @@ The screenshots above demonstrate the key features of the Social Gatherings app:
    flutter run
    ```
 
+## 👨‍💻 Developer & Contact Information
+
+### **Ashok Chandrapal**
+*Flutter Developer & Mobile App Specialist*
+
+---
+
+### 📞 **Get In Touch**
+
+| Contact Method | Details |
+|----------------|---------|
+| 📧 **Email** | [developer7039@gmail.com](mailto:developer7039@gmail.com) |
+| 📱 **Phone** | [+91 9033359874](tel:+919033359874) |
+| 🐙 **GitHub** | [@developer-ashok](https://github.com/developer-ashok) |
+| 💼 **LinkedIn** | [ashok-chandrapal](https://www.linkedin.com/in/ashok-chandrapal/) |
+
+---
+
+### 🚀 **What I Do**
+- **Mobile App Development** (Flutter, React Native)
+- **Cross-Platform Solutions**
+- **UI/UX Design & Implementation**
+- **Backend Integration**
+- **App Maintenance & Support**
+
+### 💬 **Let's Connect**
+*Feel free to reach out for:*
+- 🤝 **Collaboration opportunities**
+- 💡 **Project discussions**
+- 🐛 **Bug reports or feedback**
+- 📱 **Custom app development**
+- 🎯 **Technical consultations**
+
+---
+
+### 📱 **In-App Contact**
+*This app includes a floating contact button that you can drag anywhere on the screen to easily get in touch!*
+
 ### Demo Credentials
 
 The app comes with pre-configured demo accounts:
@@ -168,7 +206,7 @@ The app comes with pre-configured demo accounts:
 | `jane@example.com` | `password123` | Demo user 2 |
 | `demo@example.com` | `demo123` | Demo user 3 |
 
-## 📁 Project Structure
+## �� Project Structure
 
 ```
 lib/

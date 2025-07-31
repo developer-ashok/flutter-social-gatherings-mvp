@@ -1,3 +1,16 @@
+/*
+ * Social Gatherings App
+ * 
+ * Developer: Ashok Chandrapal
+ * Email: developer7039@gmail.com
+ * Phone: +91 9033359874
+ * GitHub: https://github.com/developer-ashok
+ * LinkedIn: https://www.linkedin.com/in/ashok-chandrapal/
+ * 
+ * A Flutter-based mobile app for organizing private social gatherings.
+ * Features: Event management, RSVP system, photo albums, polls, and announcements.
+ */
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:social_gatherings/providers/auth_provider.dart';

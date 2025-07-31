@@ -5,6 +5,7 @@ import 'package:social_gatherings/providers/event_provider.dart';
 import 'package:social_gatherings/providers/announcement_provider.dart';
 import 'package:social_gatherings/widgets/quick_action_card.dart';
 import 'package:social_gatherings/widgets/announcement_card.dart';
+import 'package:social_gatherings/widgets/contact_popup.dart';
 import 'package:social_gatherings/screens/create_poll_screen.dart';
 import 'package:social_gatherings/screens/create_announcement_screen.dart';
 import 'package:social_gatherings/screens/create_event_screen.dart';

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:social_gatherings/providers/auth_provider.dart';
 import 'package:social_gatherings/models/user.dart';
+import 'package:social_gatherings/widgets/contact_popup.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -63,6 +64,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _buildStatsSection(),
                   const SizedBox(height: 24),
                   _buildSettingsSection(),
+                  const SizedBox(height: 24),
+                  _buildContactDeveloperSection(),
                   const SizedBox(height: 24),
                   _buildLogoutSection(),
                 ],
@@ -398,6 +401,56 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Widget _buildContactDeveloperSection() {
+    return Card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(
+              'Developer',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          ListTile(
+            leading: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                Icons.person,
+                color: Theme.of(context).colorScheme.primary,
+                size: 20,
+              ),
+            ),
+            title: const Text(
+              'Contact Developer',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            subtitle: const Text('Get in touch with Ashok Chandrapal'),
+            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+            onTap: _showContactPopup,
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showContactPopup() {
+    showDialog(
+      context: context,
+      builder: (context) => const ContactPopup(),
+    );
+  }
+
   void _showAboutDialog() {
     showAboutDialog(
       context: context,
@@ -423,6 +476,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const Text('• Polls and voting'),
         const Text('• News and announcements'),
         const Text('• Local storage and offline support'),
+        const SizedBox(height: 16),
+        const Text(
+          'Developer:',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        const Text('Ashok Chandrapal'),
+        const Text('developer7039@gmail.com'),
+        const SizedBox(height: 8),
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+            _showContactPopup();
+          },
+          child: const Text('Contact Developer'),
+        ),
       ],
     );
   }

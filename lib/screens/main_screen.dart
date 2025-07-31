@@ -8,6 +8,8 @@ import 'package:social_gatherings/screens/photos_screen.dart';
 import 'package:social_gatherings/screens/polls_screen.dart';
 import 'package:social_gatherings/screens/announcements_screen.dart';
 import 'package:social_gatherings/screens/profile_screen.dart';
+import 'package:social_gatherings/widgets/contact_popup.dart';
+import 'package:social_gatherings/widgets/floating_contact_button.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -31,7 +33,12 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_currentIndex],
+      body: Stack(
+        children: [
+          _screens[_currentIndex],
+          const FloatingContactButton(),
+        ],
+      ),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: _currentIndex,
@@ -108,6 +115,18 @@ class _MainScreenState extends State<MainScreen> {
                 // TODO: Navigate to settings screen
               },
             ),
+            ListTile(
+              leading: const Icon(Icons.person_add),
+              title: const Text('Contact Developer'),
+              subtitle: const Text('Get in touch with Ashok Chandrapal'),
+              onTap: () {
+                Navigator.pop(context);
+                showDialog(
+                  context: context,
+                  builder: (context) => const ContactPopup(),
+                );
+              },
+            ),
             const Divider(),
             ListTile(
               leading: const Icon(Icons.logout),
@@ -122,8 +141,8 @@ class _MainScreenState extends State<MainScreen> {
               },
             ),
           ],
+                  ),
         ),
-      ),
-    );
-  }
+      );
+    }
 } 
