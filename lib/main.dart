@@ -1,0 +1,54 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:social_gatherings/providers/auth_provider.dart';
+import 'package:social_gatherings/providers/event_provider.dart';
+import 'package:social_gatherings/providers/photo_provider.dart';
+import 'package:social_gatherings/providers/poll_provider.dart';
+import 'package:social_gatherings/providers/announcement_provider.dart';
+import 'package:social_gatherings/screens/splash_screen.dart';
+import 'package:social_gatherings/screens/main_screen.dart';
+import 'package:social_gatherings/screens/auth/login_screen.dart';
+import 'package:social_gatherings/screens/profile_screen.dart';
+import 'package:social_gatherings/utils/theme.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(const SocialGatheringsApp());
+}
+
+class SocialGatheringsApp extends StatelessWidget {
+  const SocialGatheringsApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => EventProvider()),
+        ChangeNotifierProvider(create: (_) => PhotoProvider()),
+        ChangeNotifierProvider(create: (_) => PollProvider()),
+        ChangeNotifierProvider(create: (_) => AnnouncementProvider()),
+      ],
+      child: MaterialApp(
+        title: 'Social Gatherings',
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: ThemeMode.system,
+        debugShowCheckedModeBanner: false,
+        initialRoute: '/',
+        routes: {
+          '/': (context) => const SplashScreen(),
+          '/login': (context) => const LoginScreen(),
+          '/main': (context) => const MainScreen(),
+          '/profile': (context) => const ProfileScreen(),
+        },
+        onUnknownRoute: (settings) {
+          // Fallback route - redirect to splash screen
+          return MaterialPageRoute(
+            builder: (context) => const SplashScreen(),
+          );
+        },
+      ),
+    );
+  }
+} 
