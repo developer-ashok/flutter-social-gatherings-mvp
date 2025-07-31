@@ -61,7 +61,76 @@ A complete Flutter-based mobile application for organizing private social gather
 
 ## 📱 Screenshots
 
-*(Add your screenshots here once available)*
+### App Screenshots
+
+<details>
+<summary>📱 Click to view screenshots</summary>
+
+#### Home Screen
+![Home Screen](screenshots/home.png)
+*Main dashboard with relationship circle and quick actions*
+
+#### Home Screen (Alternative View)
+![Home Screen Alternative](screenshots/home_1.png)
+*Alternative view of the home screen with different content*
+
+#### Calendar View
+![Calendar Screen](screenshots/calendar.png)
+*Event calendar with upcoming gatherings and event markers*
+
+#### RSVP System
+![RSVP Screen](screenshots/rsvp.png)
+*RSVP functionality for event attendance management*
+
+#### Photos & Albums
+![Photos Screen](screenshots/photos.png)
+*Photo albums and gallery view with event memories*
+
+#### Photo Details
+![Photo Detail](screenshots/photo-detail.png)
+*Detailed view of individual photos with captions*
+
+#### Polls
+![Polls Screen](screenshots/polls.png)
+*Interactive polls with voting functionality and results*
+
+#### News & Announcements
+![News Screen](screenshots/news.png)
+*Community updates and announcements feed*
+
+#### News Details
+![News Details](screenshots/news-details.png)
+*Detailed view of news articles and announcements*
+
+</details>
+
+### App Features Showcase
+
+The screenshots above demonstrate the key features of the Social Gatherings app:
+
+- **🏠 Home Dashboard**: Modern interface with relationship circle visualization
+- **📅 Calendar Management**: Event scheduling and calendar view
+- **✅ RSVP System**: Easy event attendance management
+- **📸 Photo Albums**: Event photo sharing and gallery
+- **🗳️ Polls**: Interactive voting and decision making
+- **📢 News Feed**: Community updates and announcements
+
+**Note**: All screenshots show the app running with demo data and the modern Material Design 3 interface. If images don't load immediately, please refresh the page or wait a moment for GitHub to process them.
+
+### How to Add Your Own Screenshots
+
+1. **Take screenshots** of your app running in a simulator/emulator
+2. **Save them** in the `screenshots/` folder with descriptive names:
+   - `login_screen.png`
+   - `home_screen.png`
+   - `calendar_screen.png`
+   - `polls_screen.png`
+   - `news_screen.png`
+   - `profile_screen.png`
+
+3. **Update the README** by replacing the placeholder text above with your actual screenshots
+
+**Note**: Make sure your screenshots are clear, well-lit, and showcase the key features of your app!
 
 ## 🚀 Getting Started
 
